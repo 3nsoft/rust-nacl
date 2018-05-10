@@ -3,5 +3,6 @@ name = "nacl"
 version = "0.1.0"
 authors = ["3NSoft Inc. <hq@3nsoft.com>"]
 license = "LGPL-3.0-or-later"
+repository = "https://github.com/3nsoft/rust-nacl"
 
 [dependencies]
