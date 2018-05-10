@@ -3,7 +3,7 @@ name = "nacl"
 version = "0.1.0"
 description = "Rust version of NaCl Cryptographic library with Scrypt added"
 authors = ["3NSoft Inc. <hq@3nsoft.com>"]
-license = "GPL-3.0-or-later"
+license = "LGPL-3.0+"
 repository = "https://github.com/3nsoft/rust-nacl"
 
 [dependencies]
