@@ -255,8 +255,7 @@ pub fn curve25519_base(q: &mut [u8], n: &[u8]) {
 #[cfg(test)]
 mod tests {
 
-	use boxes::scalarmult::curve25519_base;
-	use boxes::scalarmult::curve25519;
+	use boxes::scalarmult::{ curve25519_base, curve25519 };
 	use util::verify::compare;
 
 	/// Test analogs of tests/scalarmult.c, tests/scalarmult2.c,

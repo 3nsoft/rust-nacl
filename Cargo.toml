@@ -1,6 +1,6 @@
 [package]
 name = "nacl"
-version = "0.1.0"
+version = "0.2.0"
 description = "Rust version of NaCl Cryptographic library with Scrypt added"
 authors = ["3NSoft Inc. <hq@3nsoft.com>"]
 license = "LGPL-3.0+"

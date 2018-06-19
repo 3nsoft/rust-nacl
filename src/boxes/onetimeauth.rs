@@ -113,8 +113,7 @@ pub fn poly1305_verify(h: &[u8], inc: &[u8], k: &[u8]) -> bool {
 #[cfg(test)]
 mod tests {
 
-	use boxes::onetimeauth::poly1305;
-	use boxes::onetimeauth::poly1305_verify;
+	use boxes::onetimeauth::{ poly1305, poly1305_verify };
 	use util::verify::compare_v16;
 
 	// Analog to tests/onetimeauth.c, expected result from tests/onetimeauth.out

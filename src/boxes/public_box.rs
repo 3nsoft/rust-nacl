@@ -14,15 +14,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use boxes::stream::SIGMA;
-use boxes::scalarmult::curve25519_base;
-use boxes::scalarmult::curve25519;
-use util::Error;
-use util::make_conf_error;
+use boxes::scalarmult::{ curve25519_base, curve25519 };
+use util::{ Error, make_conf_error, Resetable };
 use boxes::core::hsalsa20;
 
-pub use boxes::secret_box::NONCE_LENGTH;
-pub use boxes::secret_box::KEY_LENGTH;
-pub use boxes::secret_box::POLY_LENGTH;
+pub use boxes::secret_box::{ NONCE_LENGTH, KEY_LENGTH, POLY_LENGTH};
+
 pub static JWK_ALG_NAME: &str = "NaCl-box-CXSP";
 
 /// This function generates a public for any given secret key, which itself
@@ -55,11 +52,9 @@ pub fn calc_dhshared_key(pk: &[u8], sk: &[u8]) -> Result<Vec<u8>, Error> {
 	curve25519(&mut s0, &sk, &pk);
 	let mut s: Vec<u8> = vec![0; 32];
 	hsalsa20(&mut s, &N_TO_CALC_DHSHARED_KEY, &s0, SIGMA);
-	s0.copy_from_slice(&ZEROS_U8_32);
+	s0.reset();
 	Ok(s)
 }
-
-static ZEROS_U8_32: [u8; 32] = [0; 32];
 
 pub mod stream {
 	pub use boxes::secret_box::pack;
@@ -75,7 +70,7 @@ pub fn pack(m: &[u8], n: &[u8], pk: &[u8], sk: &[u8]) ->
 		Result<Vec<u8>, Error> {
 	let mut k = try!(calc_dhshared_key(pk, sk));
 	let c = stream::pack(m, n, k.as_slice());
-	k.copy_from_slice(&ZEROS_U8_32);
+	k.reset();
 	c
 }
 
@@ -87,13 +82,13 @@ pub fn open(c: &[u8], n: &[u8], pk: &[u8], sk: &[u8]) ->
 		Result<Vec<u8>, Error> {
 	let mut k = try!(calc_dhshared_key(pk, sk));
 	let m = stream::open(c, n, k.as_slice());
-	k.copy_from_slice(&ZEROS_U8_32);
+	k.reset();
 	m
 }
 
 pub mod format_wn {
 
-	use util::Error;
+	use util::{ Error, Resetable };
 	use boxes::public_box::calc_dhshared_key;
 
 	pub use boxes::secret_box::format_wn::copy_nonce_from;
@@ -110,19 +105,17 @@ pub mod format_wn {
 			Result<Vec<u8>, Error> {
 		let mut k = try!(calc_dhshared_key(pk, sk));
 		let c = stream::pack(m, n, k.as_slice());
-		k.copy_from_slice(&ZEROS_U8_32);
+		k.reset();
 		c
 	}
 
-	static ZEROS_U8_32: [u8; 32] = [0; 32];
-	
 	/// This function opens cipher that has a with-nonce layout, which is
 	/// nonce, followed by poly1305 hash, followed by xsalsa20 cipher.
 	/// 
 	pub fn open(c: &[u8], pk: &[u8], sk: &[u8]) -> Result<Vec<u8>, Error> {
 		let mut k = try!(calc_dhshared_key(pk, sk));
 		let m = stream::open(c, k.as_slice());
-		k.copy_from_slice(&ZEROS_U8_32);
+		k.reset();
 		m
 	}
 
@@ -179,11 +172,7 @@ pub mod format_wn {
 mod tests {
 
 	use util::verify::compare;
-	use boxes::public_box::KEY_LENGTH;
-	use boxes::public_box::POLY_LENGTH;
-	use boxes::public_box::NONCE_LENGTH;
-	use boxes::public_box::pack;
-	use boxes::public_box::open;
+	use boxes::public_box::{ KEY_LENGTH, POLY_LENGTH, NONCE_LENGTH, pack, open };
 
 	static alicesk: [u8; KEY_LENGTH] = [
 		0x77,0x07,0x6d,0x0a,0x73,0x18,0xa5,0x7d,

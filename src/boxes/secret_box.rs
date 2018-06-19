@@ -16,13 +16,10 @@
 //! This module provides secret box pack and open functionality.
 //! It also provide ability to use cipner format with-nonce.
 
-use boxes::stream::xsalsa20_xor;
-use boxes::stream::xsalsa20;
-use boxes::onetimeauth::poly1305;
-use boxes::onetimeauth::poly1305_verify;
-use util::Error;
-use util::make_cipher_verification_error;
-use util::make_conf_error;
+use boxes::stream::{ xsalsa20_xor, xsalsa20 };
+use boxes::onetimeauth::{ poly1305, poly1305_verify };
+use util::{ Error, make_cipher_verification_error, make_conf_error,
+	Resetable };
 
 /// Analog of crypto_secretbox in crypto_secretbox/xsalsa20poly1305/ref/box.c
 /// with an addition that there no zero pads, neither in incoming message, nor
@@ -38,7 +35,7 @@ fn xsalsa20_poly1305_pad_and_pack(c: &mut [u8], m: &[u8], n: &[u8], k: &[u8]) {
 	// write poly output into cipher pack
 	c[0..POLY_LENGTH].copy_from_slice(&poly_out);
 	// clear
-	poly_key.copy_from_slice(&ZEROS_U8_32);
+	poly_key.reset();
 }
 
 /// This function packs given message into xsalsa20+poly1305 secret-box bytes
@@ -88,12 +85,10 @@ pub fn open(c: &[u8], n: &[u8], k: &[u8]) -> Result<Vec<u8>, Error> {
 	xsalsa20_xor(&mut subkey, &mut m, &c, 16, &n, &k);
 
 	// first 32 bytes, dumped into subkey, should be cleared
-	subkey.copy_from_slice(&ZEROS_U8_32);
+	subkey[0..32].reset();
 	
 	Ok(m)
 }
-
-static ZEROS_U8_32: [u8; 32] = [0; 32];
 
 
 pub mod format_wn {
@@ -309,12 +304,8 @@ pub const JWK_ALG_NAME: &str = "NaCl-sbox-XSP";
 mod tests {
 
 	use util::verify::compare;
-	use boxes::secret_box::NONCE_LENGTH;
-	use boxes::secret_box::KEY_LENGTH;
-	use boxes::secret_box::POLY_LENGTH;
-	use boxes::secret_box::pack;
-	use boxes::secret_box::open;
-	use boxes::secret_box::format_wn;
+	use boxes::secret_box::{ NONCE_LENGTH, KEY_LENGTH, POLY_LENGTH, pack, open,
+		format_wn };
 
 	static firstkey: [u8; KEY_LENGTH] = [
 		0x1b,0x27,0x55,0x64,0x73,0xe9,0x85,0xd4,

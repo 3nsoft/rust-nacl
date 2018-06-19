@@ -16,7 +16,7 @@
 //! This module provides functionality found in
 //! crypto_sign/ed25519/ref/ge25519_base.data
 
-use signing::ge25519::	Ge25519_aff;
+use signing::ge25519::Ge25519_aff;
 use signing::fe25519::Fe25519;
 
 #[allow(non_upper_case_globals)]

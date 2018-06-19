@@ -17,8 +17,8 @@
 //! crypto_stream/salsa20/ref/stream.c, crypto_stream/salsa20/ref/xor.c,
 //! crypto_stream/xsalsa20/ref/stream.c and crypto_stream/xsalsa20/ref/xor.c
 
-use boxes::core::salsa20;
-use boxes::core::hsalsa20;
+use boxes::core::{ salsa20, hsalsa20 };
+use util::Resetable;
 
 // string "expand 32-byte k" in ascii form
 pub const SIGMA: &[u8] = &[
@@ -104,7 +104,7 @@ pub fn xsalsa20(c: &mut [u8], n: &[u8], k: &[u8]) {
 	let mut subkey: [u8; 32] = [0; 32];
 	hsalsa20(&mut subkey, n, k, SIGMA);
 	stream_32(c, &n[16..24], &subkey);
-	subkey.copy_from_slice(&ZEROS_U8_32);
+	subkey.reset();
 }
 
 pub fn xsalsa20_xor(c0: &mut [u8], c: &mut [u8], m: &[u8], m_pad_len: usize,
@@ -112,16 +112,13 @@ pub fn xsalsa20_xor(c0: &mut [u8], c: &mut [u8], m: &[u8], m_pad_len: usize,
 	let mut subkey: [u8; 32] = [0; 32];
 	hsalsa20(&mut subkey, n, k, SIGMA);
 	stream_xor(c0, c, m, m_pad_len, &n[16..24], &subkey);
-	subkey.copy_from_slice(&ZEROS_U8_32);
+	subkey.reset();
 }
-
-const ZEROS_U8_32: [u8; 32] = [0; 32];
 
 #[cfg(test)]
 mod tests {
 
-	use boxes::stream::xsalsa20;
-	use boxes::stream::xsalsa20_xor;
+	use boxes::stream::{ xsalsa20, xsalsa20_xor };
 	use util::verify::compare;
 	
 	// Analog of tests/stream3.c, with expected result printed in

@@ -49,6 +49,30 @@ pub fn make_signature_verification_error() -> Error {
 	}
 }
 
+pub trait Resetable {
+	fn reset(&mut self) -> ();
+}
+
+impl Resetable for [u8] {
+	fn reset(&mut self) -> () {
+		let len = self.len();
+		if len == 0 { return; }
+		for i in 0..(len-1) {
+			self[i] = 0;
+		}
+	}
+}
+
+impl Resetable for [u32] {
+	fn reset(&mut self) -> () {
+		let len = self.len();
+		if len == 0 { return; }
+		for i in 0..(len-1) {
+			self[i] = 0;
+		}
+	}
+}
+
 // debug helper
 pub fn print_arr(name: &str, x: &[u8]) {
 	print!("  {} has {} bytes: [ ", name, x.len());

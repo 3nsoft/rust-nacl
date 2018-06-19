@@ -214,8 +214,7 @@ pub fn hsalsa20(out: &mut [u8], inc: &[u8], k: &[u8], c: &[u8]) {
 #[cfg(test)]
 mod tests {
 	
-	use boxes::core::salsa20;
-	use boxes::core::hsalsa20;
+	use boxes::core::{ salsa20, hsalsa20 };
 	use util::verify::compare;
 
 	// Analog of tests/core4.c, expected result printed in tests/core4.out

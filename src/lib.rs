@@ -17,7 +17,7 @@ mod boxes;
 pub use boxes::{ secret_box, public_box };
 
 pub mod signing;
-mod hash;
+pub mod hash;
 
 // pub mod scrypt;
 

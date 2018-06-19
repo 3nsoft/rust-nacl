@@ -13,6 +13,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+use util::Resetable;
+
 /// Encode a length len/4 vector of (uint32_t) into a length len vector of
 /// (unsigned char) in big-endian form.  Assumes len is a multiple of 4.
 /// 
@@ -174,14 +176,11 @@ fn sha256_transform(state: &mut [u32], block: &[u8]) {
 	for i in 0..8 { state[i] += s[i]; }
 
 	/* Clean the stack. */
-	w.copy_from_slice(&ZEROS_U32_64);
-	s.copy_from_slice(&ZEROS_U32_8);
+	w.reset();
+	s.reset();
 	t0 = 0;
 	t1 = 0;
 }
-
-const ZEROS_U32_64: [u32; 64] = [0; 64];
-const ZEROS_U32_8: [u32; 8] = [0; 8];
 
 const PAD: [u8; 64] = [
 	0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -307,14 +306,10 @@ pub fn sha256_final(digest: &mut [u8], ctx: &mut Sha256Ctx) {
 }
 
 fn clear_sha_ctx(ctx: &mut Sha256Ctx) {
-	ctx.buf.copy_from_slice(&ZEROS_U8_64);
-	ctx.count.copy_from_slice(&ZEROS_U32_2);
-	ctx.state.copy_from_slice(&ZEROS_U32_8);
+	ctx.buf.reset();
+	ctx.count.reset();
+	ctx.state.reset();
 }
-
-const ZEROS_U8_64: [u8; 64] = [0; 64];
-const ZEROS_U32_2: [u32; 2] = [0; 2];
-
 
 // Initialize an HMAC-SHA256 operation with the given key.
 fn hmac_sha256_init(ctx: &mut HmacSha256Ctx, k: &[u8]) {
@@ -330,7 +325,7 @@ fn hmac_sha256_init(ctx: &mut HmacSha256Ctx, k: &[u8]) {
 		hmac_sha256_init(ctx, &mut khash);
 
 		// Clean the stack.
-		khash.copy_from_slice(&ZEROS_U8_32);
+		khash.reset();
 		return;
 	}
 
@@ -347,9 +342,6 @@ fn hmac_sha256_init(ctx: &mut HmacSha256Ctx, k: &[u8]) {
 	sha256_update(&mut ctx.octx, &pad);
 
 }
-
-const ZEROS_U8_32: [u8; 32] = [0; 32];
-
 
 // Add bytes to the HMAC-SHA256 operation.
 fn hmac_sha256_update(ctx: &mut HmacSha256Ctx, inc: &[u8]) {
@@ -371,7 +363,7 @@ fn hmac_sha256_final(digest: &mut [u8], ctx: &mut HmacSha256Ctx) {
 	sha256_final(digest, &mut ctx.octx);
 
 	// Clean the stack.
-	ihash.copy_from_slice(&ZEROS_U8_32);
+	ihash.reset();
 }
 
 // PBKDF2_SHA256(passwd, passwdlen, salt, saltlen, c, buf, dkLen):
