@@ -19,7 +19,7 @@ pub use boxes::{ secret_box, public_box };
 pub mod signing;
 pub mod hash;
 
-// pub mod scrypt;
+pub mod scrypt;
 
 mod util;
 pub use util::verify::{ compare, compare_v16, compare_v32 };

@@ -14,26 +14,3 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 pub mod sha512;
-
-pub trait Hasher {
-
-	/**
-	 * This absorbs bytes as they stream in, hashing even blocks.
-	 */
-	fn update(&mut self, m: &[u8]) -> ();
-	
-	/**
-	 * This method tells a hasher that there are no more bytes to hash,
-	 * and that a final hash should be produced.
-	 * This also forgets all of hasher's state.
-	 * And if this hasher is not single-use, update can be called
-	 * again to produce hash for a new stream of bytes.
-	 */
-	fn digest(&mut self) -> Vec<u8>;
-	
-	/**
-	 * This method securely wipes internal state.
-	 */
-	fn clear(&mut self) -> ();
-
-}

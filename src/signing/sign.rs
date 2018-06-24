@@ -15,8 +15,7 @@
 
 use signing::ge25519::*;
 use signing::sc25519::*;
-use hash::{ Hasher,
-	sha512::{ hash_sha512, make_sha512 } };
+use hash::sha512::{ hash_sha512, Sha512 };
 use util::{ make_conf_error, make_signature_verification_error, Error,
 	Resetable, verify::compare_v32 };
 
@@ -153,7 +152,7 @@ pub fn signature(m: &[u8], sk: &[u8]) -> Result<Vec<u8>, Error> {
 	sig[32..64].copy_from_slice(&az[32..]);
 	/* sig: 32-byte uninit, 32-byte z */
 
-	let mut hasher = make_sha512();
+	let mut hasher = Sha512::new();
 	hasher.update(&sig[32..]);
 	hasher.update(m);
 	let nonce = hasher.digest();
@@ -243,7 +242,7 @@ pub fn verify(sig: &[u8], m: &[u8], pk: &[u8]) -> Result<bool, Error> {
 	let mut scs = make_sc25519();
 	sc25519_from32bytes(&mut scs, &sig[32..64]);
 
-	let mut hasher = make_sha512();
+	let mut hasher = Sha512::new();
 	hasher.update(&sig[0..32]);
 	hasher.update(pk);
 	hasher.update(m);

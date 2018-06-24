@@ -30,7 +30,7 @@ fn load_littleendian(x: &[u8]) -> u32 {
 }
 
 #[inline]
-fn store_littleendian(x: &mut [u8], mut u: u32) -> () {
+fn store_littleendian(x: &mut [u8], mut u: u32) {
 	x[0] = u as u8; u >>= 8;
 	x[1] = u as u8; u >>= 8;
 	x[2] = u as u8; u >>= 8;

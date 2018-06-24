@@ -91,6 +91,7 @@ macro_rules! RNDr {
 /// SHA256 block compression function.  The 256-bit state is transformed via
 /// the 512-bit input block to produce a new state.
 ///
+#[allow(unused_assignments)] // to clean variables on stack
 fn sha256_transform(state: &mut [u32], block: &[u8]) {
 	let mut w: [u32; 64] = [0; 64];
 	let mut s: [u32; 8] = [0; 8];
@@ -209,7 +210,7 @@ pub fn make_sha256_ctx() -> Sha256Ctx {
 }
 
 pub fn make_hmac_sha256_ctx() -> HmacSha256Ctx {
-	return HmacSha256Ctx {
+	HmacSha256Ctx {
 		ictx: make_sha256_ctx(),
 		octx: make_sha256_ctx(),
 	}
@@ -322,6 +323,7 @@ fn hmac_sha256_init(ctx: &mut HmacSha256Ctx, k: &[u8]) {
 		sha256_update(&mut ctx.ictx, k);
 		sha256_final(&mut khash, &mut ctx.ictx);
 
+		// iterate this function with a hash, instead of a key itself
 		hmac_sha256_init(ctx, &mut khash);
 
 		// Clean the stack.
@@ -333,12 +335,14 @@ fn hmac_sha256_init(ctx: &mut HmacSha256Ctx, k: &[u8]) {
 
 	// Inner SHA256 operation is SHA256(K xor [block of 0x36] || data).
 	sha256_init(&mut ctx.ictx);
-	for i in 0..k_len { pad[i] = 0x36 ^ k[i]; }
+	for i in 0..64 { pad[i] = 0x36; }
+	for i in 0..k_len { pad[i] ^= k[i]; }
 	sha256_update(&mut ctx.ictx, &pad);
 
 	// Outer SHA256 operation is SHA256(K xor [block of 0x5c] || hash).
 	sha256_init(&mut ctx.octx);
-	for i in 0..k_len { pad[i] = 0x5c ^ k[i]; }
+	for i in 0..64 { pad[i] = 0x5c; }
+	for i in 0..k_len { pad[i] ^= k[i]; }
 	sha256_update(&mut ctx.octx, &pad);
 
 }
@@ -396,7 +400,7 @@ pub fn pbkdf2_sha256(passwd: &[u8], salt: &[u8], c: u64, buf: &mut[u8]) {
 		// T_i = U_1 ...
 		t.copy_from_slice(&u);
 
-		for _ in 2..c {
+		for _ in 2..(c+1) {
 			// Compute U_j.
 			hmac_sha256_init(&mut hctx, &passwd);
 			hmac_sha256_update(&mut hctx, &u);
@@ -438,12 +442,8 @@ fn copy_sha_ctx(dst: &mut Sha256Ctx, src: &Sha256Ctx) {
 #[cfg(test)]
 mod tests {
 
-	use scrypt::sha256::pbkdf2_sha256;
-	use scrypt::sha256::make_hmac_sha256_ctx;
-	use scrypt::sha256::make_sha256_ctx;
-	use scrypt::sha256::sha256_init;
-	use scrypt::sha256::sha256_update;
-	use scrypt::sha256::sha256_final;
+	use scrypt::sha256::{ pbkdf2_sha256, make_sha256_ctx, sha256_init,
+		sha256_update, sha256_final };
 	use util::verify::compare;
 
 	// Test SHA-256 for use in scrypt.

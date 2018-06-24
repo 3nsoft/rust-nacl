@@ -15,7 +15,6 @@
 
 #![allow(non_upper_case_globals)]
 
-use hash::Hasher;
 use util::Resetable;
 
 /// Analog of load_bigendian in crypto_hashblocks/sha512/ref/blocks.c
@@ -305,7 +304,7 @@ pub fn hash_sha512(out: &mut [u8], inc: &[u8]) {
 	out.copy_from_slice(&h);
 }
 
-fn hash_padded_block(h: &mut [u8], odd_bytes: &[u8], total_len: usize) -> () {
+fn hash_padded_block(h: &mut [u8], odd_bytes: &[u8], total_len: usize) {
 	let mut padded: [u8; 256] = [0; 256];
 	let odd_len = odd_bytes.len();
 
@@ -344,18 +343,22 @@ pub struct Sha512 {
 	h: [u8; 64]
 }
 
-pub fn make_sha512() -> Sha512 {
-	Sha512 {
-		cache: [0; 128],
-		h: [0; 64],
-		total_len: 0,
-		cached_bytes: 0,
+impl Sha512 {
+
+	pub fn new() -> Sha512 {
+		Sha512 {
+			cache: [0; 128],
+			h: [0; 64],
+			total_len: 0,
+			cached_bytes: 0,
+		}
 	}
-}
-
-impl Hasher for Sha512 {
-
-	fn update(&mut self, m: &[u8]) -> () {
+	
+	/// This absorbs given bytes, hashing even blocks, and internally caching
+	/// odd bytes to hash either with next bytes, or as padded bytes when digest
+	/// is called.
+	/// 
+	pub fn update(&mut self, m: &[u8]) {
 		let mlen = m.len();
 		if mlen == 0 { return; }
 		if self.total_len == 0 {
@@ -389,7 +392,10 @@ impl Hasher for Sha512 {
 		self.cache[self.cached_bytes..].reset();
 	}
 
-	fn digest(&mut self) -> Vec<u8> {
+	/// Completes hashing and returns sha512 hash bytes.
+	/// If no bytes were given to update prior to this call, panic will ensue.
+	/// 
+	pub fn digest(&mut self) -> Vec<u8> {
 		if self.total_len == 0 { panic!("No bytes have been hashed"); }
 		hash_padded_block(
 			&mut self.h, &self.cache[0..self.cached_bytes], self.total_len);
@@ -398,7 +404,8 @@ impl Hasher for Sha512 {
 		v
 	}
 
-	fn clear(&mut self) -> () {
+	/// This clears internal state of the hasher.
+	pub fn clear(&mut self) {
 		self.total_len = 0;
 		self.cached_bytes = 0;
 		self.h.reset();
@@ -409,8 +416,7 @@ impl Hasher for Sha512 {
 #[cfg(test)]
 mod tests {
 
-	use hash::{ Hasher,
-		sha512::{ hash_sha512, make_sha512 } };
+	use hash::sha512::{ hash_sha512, Sha512 };
 	use util::verify::compare;
 
 	// Analog of tests/hash.c, with result printed in tests/hash.out
@@ -456,7 +462,7 @@ mod tests {
 			0x28, 0x22, 0x8a, 0x0c, 0x82, 0xb6, 0x7c, 0x39, 0xe9, 0x6b,
 			0x4b, 0x34, 0x47, 0x98, 0x87, 0x0d, 0x5d, 0xae, 0xe9, 0x3e,
 			0x3a, 0xe5, 0x93 ];
-		let mut hasher = make_sha512();
+		let mut hasher = Sha512::new();
 		hasher.update(&x[0..10]);
 		hasher.update(&x[10..]);
 		let result = hasher.digest();
@@ -486,7 +492,7 @@ mod tests {
 			0xd6, 0x27, 0xcd, 0x4b, 0xa1, 0xc0, 0xb4, 0x4d, 0x30, 0xe1,
 			0x4f, 0x7f, 0xc5, 0x91, 0xa0, 0x1c, 0x60, 0xd2, 0xcb, 0x6f,
 			0x45, 0x8f, 0x40, 0x8b, 0x3a, 0xe5, 0x93, 0x93 ];
-		let mut hasher = make_sha512();
+		let mut hasher = Sha512::new();
 		hasher.update(&x[0..56]);
 		hasher.update(&x[56..]);
 		let result = hasher.digest();
@@ -525,7 +531,7 @@ mod tests {
 			0x6f, 0x10, 0x4a, 0xa5, 0x40, 0x53, 0xef, 0xa1, 0x9b, 0xed,
 			0x4f, 0x7f, 0xc5, 0x91, 0xa0, 0x1c, 0x60, 0xd2, 0xcb, 0x6f,
 			0x45, 0x8f, 0x40 ];
-		let mut hasher = make_sha512();
+		let mut hasher = Sha512::new();
 		hasher.update(&x[0..10]);
 		hasher.update(&x[10..20]);
 		hasher.update(&x[20..]);
