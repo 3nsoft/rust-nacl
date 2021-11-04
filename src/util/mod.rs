@@ -15,6 +15,8 @@
 
 pub mod verify;
 
+pub mod ops;
+
 #[derive(Debug)]
 pub enum ErrorCondition {
 	CipherVerification,

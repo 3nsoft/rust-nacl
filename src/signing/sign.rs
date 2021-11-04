@@ -13,10 +13,10 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use signing::ge25519::*;
-use signing::sc25519::*;
-use hash::sha512::{ hash_sha512, Sha512 };
-use util::{ make_conf_error, make_signature_verification_error, Error,
+use super::ge25519::*;
+use super::sc25519::*;
+use crate::hash::sha512::{ hash_sha512, Sha512 };
+use crate::util::{ make_conf_error, make_signature_verification_error, Error,
 	Resetable, verify::compare_v32 };
 
 pub struct Keypair {
@@ -264,8 +264,8 @@ pub fn verify(sig: &[u8], m: &[u8], pk: &[u8]) -> Result<bool, Error> {
 #[cfg(test)]
 mod tests {
 
-	use signing::sign::{ generate_keypair, sign, open, signature, verify };
-	use util::verify::compare;
+	use super::{ generate_keypair, sign, open, signature, verify };
+	use crate::util::verify::compare;
 
 	#[test]
 	fn test1() {

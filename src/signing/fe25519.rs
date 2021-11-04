@@ -1,4 +1,4 @@
-// Copyright(c) 2018 3NSoft Inc.
+// Copyright(c) 2018, 2021 3NSoft Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -16,6 +16,7 @@
 //! This module provides functionality found in
 //! crypto_sign/ed25519/ref/fe25519.c
 
+use crate::{ subw };
 
 /// Analog of struct fe25519 in crypto_sign/ed25519/ref/fe25519.h
 pub struct Fe25519 {
@@ -44,7 +45,7 @@ pub fn fe25519_cp(r: &mut Fe25519, x: &Fe25519) {
 #[inline]
 fn equal(a: u32, b: u32) -> u32 {
 	let mut x = a ^ b; /* 0: yes; 1..65535: no */
-	x -= 1; /* 4294967295: yes; 0..65534: no */
+	x = subw!( x, 1 as u32 ); /* 4294967295: yes; 0..65534: no */
 	x >>= 31; /* 1: yes; 0: no */
 	x
 }
@@ -54,7 +55,7 @@ fn equal(a: u32, b: u32) -> u32 {
 #[inline]
 fn ge(a: u32, b: u32) -> u32 {
 	let mut x = a;
-	x -= b; /* 0..65535: yes; 4294901761..4294967295: no */
+	x = subw!( x, b ); /* 0..65535: yes; 4294901761..4294967295: no */
 	x >>= 31; /* 0: yes; 1: no */
 	x ^= 1; /* 1: yes; 0: no */
 	x
@@ -153,7 +154,7 @@ pub fn fe25519_iseq_vartime(x: &Fe25519, y: &Fe25519) -> bool {
 /// Analog of fe25519_cmov in crypto_sign/ed25519/ref/fe25519.c
 pub fn fe25519_cmov(r: &mut Fe25519, x: &Fe25519, b: u8) {
   let mut mask: u32 = b as u32;
-  mask = 0 - mask;
+  mask = subw!( 0 as u32, mask );
   for i in 0..32 { r.v[i] ^= mask & (x.v[i] ^ r.v[i]); }
 }
 

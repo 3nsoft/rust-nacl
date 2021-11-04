@@ -13,12 +13,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use boxes::stream::SIGMA;
-use boxes::scalarmult::{ curve25519_base, curve25519 };
-use util::{ Error, make_conf_error, Resetable };
-use boxes::core::hsalsa20;
+use super::stream::SIGMA;
+use super::scalarmult::{ curve25519_base, curve25519 };
+use crate::util::{ Error, make_conf_error, Resetable };
+use super::core::hsalsa20;
+use super::secret_box;
 
-pub use boxes::secret_box::{ NONCE_LENGTH, KEY_LENGTH, POLY_LENGTH};
+pub use super::secret_box::{ NONCE_LENGTH, KEY_LENGTH, POLY_LENGTH};
 
 pub static JWK_ALG_NAME: &str = "NaCl-box-CXSP";
 
@@ -57,8 +58,8 @@ pub fn calc_dhshared_key(pk: &[u8], sk: &[u8]) -> Result<Vec<u8>, Error> {
 }
 
 pub mod stream {
-	pub use boxes::secret_box::pack;
-	pub use boxes::secret_box::open;
+	pub use super::secret_box::pack;
+	pub use super::secret_box::open;
 }
 
 /// This function packs given message into xsalsa20+poly1305 secret-box bytes
@@ -68,7 +69,7 @@ pub mod stream {
 /// 
 pub fn pack(m: &[u8], n: &[u8], pk: &[u8], sk: &[u8]) ->
 		Result<Vec<u8>, Error> {
-	let mut k = try!(calc_dhshared_key(pk, sk));
+	let mut k = calc_dhshared_key(pk, sk)?;
 	let c = stream::pack(m, n, k.as_slice());
 	k.reset();
 	c
@@ -80,7 +81,7 @@ pub fn pack(m: &[u8], n: &[u8], pk: &[u8], sk: &[u8]) ->
 /// 
 pub fn open(c: &[u8], n: &[u8], pk: &[u8], sk: &[u8]) ->
 		Result<Vec<u8>, Error> {
-	let mut k = try!(calc_dhshared_key(pk, sk));
+	let mut k = calc_dhshared_key(pk, sk)?;
 	let m = stream::open(c, n, k.as_slice());
 	k.reset();
 	m
@@ -88,14 +89,15 @@ pub fn open(c: &[u8], n: &[u8], pk: &[u8], sk: &[u8]) ->
 
 pub mod format_wn {
 
-	use util::{ Error, Resetable };
-	use boxes::public_box::calc_dhshared_key;
+	use crate::util::{ Error, Resetable };
+	use super::calc_dhshared_key;
+	use super::secret_box;
 
-	pub use boxes::secret_box::format_wn::copy_nonce_from;
+	pub use secret_box::format_wn::copy_nonce_from;
 
 	pub mod stream {
-		pub use boxes::secret_box::format_wn::pack;
-		pub use boxes::secret_box::format_wn::open;
+		pub use super::secret_box::format_wn::pack;
+		pub use super::secret_box::format_wn::open;
 	}
 
 	/// This function packs given message into  with-nonce layout, which is
@@ -103,7 +105,7 @@ pub mod format_wn {
 	/// 
 	pub fn pack(m: &[u8], n: &[u8], pk: &[u8], sk: &[u8]) ->
 			Result<Vec<u8>, Error> {
-		let mut k = try!(calc_dhshared_key(pk, sk));
+		let mut k = calc_dhshared_key(pk, sk)?;
 		let c = stream::pack(m, n, k.as_slice());
 		k.reset();
 		c
@@ -113,7 +115,7 @@ pub mod format_wn {
 	/// nonce, followed by poly1305 hash, followed by xsalsa20 cipher.
 	/// 
 	pub fn open(c: &[u8], pk: &[u8], sk: &[u8]) -> Result<Vec<u8>, Error> {
-		let mut k = try!(calc_dhshared_key(pk, sk));
+		let mut k = calc_dhshared_key(pk, sk)?;
 		let m = stream::open(c, k.as_slice());
 		k.reset();
 		m
@@ -171,8 +173,8 @@ pub mod format_wn {
 #[allow(non_upper_case_globals)]
 mod tests {
 
-	use util::verify::compare;
-	use boxes::public_box::{ KEY_LENGTH, POLY_LENGTH, NONCE_LENGTH, pack, open };
+	use crate::util::verify::compare;
+	use super::{ KEY_LENGTH, POLY_LENGTH, NONCE_LENGTH, pack, open };
 
 	static alicesk: [u8; KEY_LENGTH] = [
 		0x77,0x07,0x6d,0x0a,0x73,0x18,0xa5,0x7d,

@@ -1,4 +1,4 @@
-// Copyright(c) 2018 3NSoft Inc.
+// Copyright(c) 2018, 2021 3NSoft Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -17,6 +17,8 @@
 //! crypto_scalarmult/curve25519/ref/smult.c and
 //! crypto_scalarmult/curve25519/ref/base.c
 
+use crate::{ subw, incr };
+
 fn add(out: &mut [u32], a: &[u32], b: &[u32]) {
 	let mut u: u32 = 0;
 	for j in 0..31 { u += a[j] + b[j]; out[j] = u & 255; u >>= 8; }
@@ -30,17 +32,17 @@ fn sub(out: &mut [u32], a: &[u32], b: &[u32]) {
 		out[j] = u & 255;
 		u >>= 8;
 	}
-	u += a[31] - b[31];
+	incr!( u, subw!( a[31], b[31] ));
 	out[31] = u;
 }
 
 fn squeeze(a: &mut [u32]) {
-  let mut u: u32 = 0;
-  for j in 0..31 { u += a[j]; a[j] = u & 255; u >>= 8; }
-  u += a[31]; a[31] = u & 127;
-  u = 19 * (u >> 7);
-  for j in 0..31 { u += a[j]; a[j] = u & 255; u >>= 8; }
-  u += a[31]; a[31] = u;
+	let mut u: u32 = 0;
+	for j in 0..31 { u += a[j]; a[j] = u & 255; u >>= 8; }
+	u += a[31]; a[31] = u & 127;
+	u = 19 * (u >> 7);
+	for j in 0..31 { u += a[j]; a[j] = u & 255; u >>= 8; }
+	u += a[31]; a[31] = u;
 }
 
 static MINUSP: [u32; 32] = [
@@ -94,9 +96,9 @@ fn square(out: &mut [u32], a: &[u32]) {
 }
 
 fn select(p: &mut [u32], q: &mut [u32], r: &[u32], s: &[u32], b: u32) {
-	let bminus1 = (b - 1) as u32;
+	let bminus1 = subw!( b, 1 as u32 );
 	for j in 0..64 {
-		let mut t = bminus1 & (r[j] ^ s[j]);
+		let t = bminus1 & (r[j] ^ s[j]);
 		p[j] = s[j] ^ t;
 		q[j] = r[j] ^ t;
 	}
@@ -255,8 +257,8 @@ pub fn curve25519_base(q: &mut [u8], n: &[u8]) {
 #[cfg(test)]
 mod tests {
 
-	use boxes::scalarmult::{ curve25519_base, curve25519 };
-	use util::verify::compare;
+	use super::{ curve25519_base, curve25519 };
+	use crate::util::verify::compare;
 
 	/// Test analogs of tests/scalarmult.c, tests/scalarmult2.c,
 	/// tests/scalarmult5.c, and tests/scalarmult6.c

@@ -1,4 +1,4 @@
-// Copyright(c) 2018 3NSoft Inc.
+// Copyright(c) 2018, 2021 3NSoft Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -15,8 +15,10 @@
 
 #![allow(non_snake_case)]
 
-use scrypt::sha256::pbkdf2_sha256;
-use util::{ Error };
+use crate::{ incr, add2 };
+
+use super::sha256::pbkdf2_sha256;
+use crate::util::{ Error };
 
 /**
  * Analog of le32dec in lib/util/sysendian.h
@@ -65,35 +67,35 @@ fn salsa20_8(B: &mut [u8]) {
 	}
 	for _ in 0..4 {
 		/* Operate on columns. */
-		x[ 4] ^= R!(x[ 0]+x[12], 7);  x[ 8] ^= R!(x[ 4]+x[ 0], 9);
-		x[12] ^= R!(x[ 8]+x[ 4],13);  x[ 0] ^= R!(x[12]+x[ 8],18);
+		x[ 4] ^= R!(add2!(x[ 0],x[12]), 7);  x[ 8] ^= R!(add2!(x[ 4],x[ 0]), 9);
+		x[12] ^= R!(add2!(x[ 8],x[ 4]),13);  x[ 0] ^= R!(add2!(x[12],x[ 8]),18);
 
-		x[ 9] ^= R!(x[ 5]+x[ 1], 7);  x[13] ^= R!(x[ 9]+x[ 5], 9);
-		x[ 1] ^= R!(x[13]+x[ 9],13);  x[ 5] ^= R!(x[ 1]+x[13],18);
+		x[ 9] ^= R!(add2!(x[ 5],x[ 1]), 7);  x[13] ^= R!(add2!(x[ 9],x[ 5]), 9);
+		x[ 1] ^= R!(add2!(x[13],x[ 9]),13);  x[ 5] ^= R!(add2!(x[ 1],x[13]),18);
 
-		x[14] ^= R!(x[10]+x[ 6], 7);  x[ 2] ^= R!(x[14]+x[10], 9);
-		x[ 6] ^= R!(x[ 2]+x[14],13);  x[10] ^= R!(x[ 6]+x[ 2],18);
+		x[14] ^= R!(add2!(x[10],x[ 6]), 7);  x[ 2] ^= R!(add2!(x[14],x[10]), 9);
+		x[ 6] ^= R!(add2!(x[ 2],x[14]),13);  x[10] ^= R!(add2!(x[ 6],x[ 2]),18);
 
-		x[ 3] ^= R!(x[15]+x[11], 7);  x[ 7] ^= R!(x[ 3]+x[15], 9);
-		x[11] ^= R!(x[ 7]+x[ 3],13);  x[15] ^= R!(x[11]+x[ 7],18);
+		x[ 3] ^= R!(add2!(x[15],x[11]), 7);  x[ 7] ^= R!(add2!(x[ 3],x[15]), 9);
+		x[11] ^= R!(add2!(x[ 7],x[ 3]),13);  x[15] ^= R!(add2!(x[11],x[ 7]),18);
 
 		/* Operate on rows. */
-		x[ 1] ^= R!(x[ 0]+x[ 3], 7);  x[ 2] ^= R!(x[ 1]+x[ 0], 9);
-		x[ 3] ^= R!(x[ 2]+x[ 1],13);  x[ 0] ^= R!(x[ 3]+x[ 2],18);
+		x[ 1] ^= R!(add2!(x[ 0],x[ 3]), 7);  x[ 2] ^= R!(add2!(x[ 1],x[ 0]), 9);
+		x[ 3] ^= R!(add2!(x[ 2],x[ 1]),13);  x[ 0] ^= R!(add2!(x[ 3],x[ 2]),18);
 
-		x[ 6] ^= R!(x[ 5]+x[ 4], 7);  x[ 7] ^= R!(x[ 6]+x[ 5], 9);
-		x[ 4] ^= R!(x[ 7]+x[ 6],13);  x[ 5] ^= R!(x[ 4]+x[ 7],18);
+		x[ 6] ^= R!(add2!(x[ 5],x[ 4]), 7);  x[ 7] ^= R!(add2!(x[ 6],x[ 5]), 9);
+		x[ 4] ^= R!(add2!(x[ 7],x[ 6]),13);  x[ 5] ^= R!(add2!(x[ 4],x[ 7]),18);
 
-		x[11] ^= R!(x[10]+x[ 9], 7);  x[ 8] ^= R!(x[11]+x[10], 9);
-		x[ 9] ^= R!(x[ 8]+x[11],13);  x[10] ^= R!(x[ 9]+x[ 8],18);
+		x[11] ^= R!(add2!(x[10],x[ 9]), 7);  x[ 8] ^= R!(add2!(x[11],x[10]), 9);
+		x[ 9] ^= R!(add2!(x[ 8],x[11]),13);  x[10] ^= R!(add2!(x[ 9],x[ 8]),18);
 
-		x[12] ^= R!(x[15]+x[14], 7);  x[13] ^= R!(x[12]+x[15], 9);
-		x[14] ^= R!(x[13]+x[12],13);  x[15] ^= R!(x[14]+x[13],18);
+		x[12] ^= R!(add2!(x[15],x[14]), 7);  x[13] ^= R!(add2!(x[12],x[15]), 9);
+		x[14] ^= R!(add2!(x[13],x[12]),13);  x[15] ^= R!(add2!(x[14],x[13]),18);
 	}
 
 	/* Compute B32 = B32 + x. */
 	for i in 0..16 {
-		B32[i] += x[i];
+		incr!( B32[i], x[i] );
 	}
 
 	/* Convert little-endian values out. */
@@ -209,8 +211,7 @@ fn smix(B: &mut [u8], r: usize, N: usize, V: &mut [u8],
 }
 
 pub fn allocate_byte_array(len: usize) -> Vec<u8> {
-	let mut v: Vec<u8> = Vec::new();
-	v.reserve_exact(len);
+	let mut v: Vec<u8> = Vec::with_capacity(len);
 	unsafe {
 		v.set_len(len);
 	}
@@ -285,9 +286,8 @@ pub fn scrypt(passwd: &[u8], salt: &[u8], logN: u8, r: usize, p: usize, dk_len: 
 mod tests {
 
 	use std::mem;
-	use scrypt::scrypt::allocate_byte_array;
-	use scrypt::scrypt::scrypt;
-	use util::verify::compare;
+	use super::{ allocate_byte_array, scrypt };
+	use crate::util::verify::compare;
 
 	#[test]
 	fn checks() {
@@ -375,7 +375,8 @@ mod tests {
 	/// Testing scrypt with logN==20, r==8, p==1.
 	/// See scrypt rfc https://tools.ietf.org/html/rfc7914
 	/// 
-	#[test]
+	// #[test]
+	#[allow(dead_code)]
 	fn with_logn_20_r_8_p_1() {
 		let P = "pleaseletmein".as_bytes();
 		let S = "SodiumChloride".as_bytes();

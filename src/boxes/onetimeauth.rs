@@ -102,7 +102,7 @@ pub fn poly1305(out: &mut [u8], inc: &[u8], k: &[u8]) {
 
 }
 
-use util::verify::compare_v16;
+use crate::util::verify::compare_v16;
 
 pub fn poly1305_verify(h: &[u8], inc: &[u8], k: &[u8]) -> bool {
   let mut correct: [u8; 16] = [0; 16];
@@ -113,8 +113,8 @@ pub fn poly1305_verify(h: &[u8], inc: &[u8], k: &[u8]) -> bool {
 #[cfg(test)]
 mod tests {
 
-	use boxes::onetimeauth::{ poly1305, poly1305_verify };
-	use util::verify::compare_v16;
+	use super::{ poly1305, poly1305_verify };
+	use crate::util::verify::compare_v16;
 
 	// Analog to tests/onetimeauth.c, expected result from tests/onetimeauth.out
 	#[test]

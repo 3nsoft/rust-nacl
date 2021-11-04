@@ -1,4 +1,4 @@
-// Copyright(c) 2018 3NSoft Inc.
+// Copyright(c) 2018, 2021 3NSoft Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -15,6 +15,8 @@
 
 //! This module provides core salsa20, mirroring functions from
 //! crypto_core/salsa20/ref/core.c
+
+use crate::{ add2, incr };
 
 #[inline]
 fn rotate(u: u32, c: i32) -> u32 {
@@ -75,56 +77,56 @@ pub fn salsa20(out: &mut [u8], inc: &[u8], k: &[u8], c: &[u8]) {
 	let mut x15 = j15;
 
 	for _ in 0..10 {
-		 x4 ^= rotate( x0+x12, 7);
-		 x8 ^= rotate( x4+ x0, 9);
-		x12 ^= rotate( x8+ x4,13);
-		 x0 ^= rotate(x12+ x8,18);
-		 x9 ^= rotate( x5+ x1, 7);
-		x13 ^= rotate( x9+ x5, 9);
-		 x1 ^= rotate(x13+ x9,13);
-		 x5 ^= rotate( x1+x13,18);
-		x14 ^= rotate(x10+ x6, 7);
-		 x2 ^= rotate(x14+x10, 9);
-		 x6 ^= rotate( x2+x14,13);
-		x10 ^= rotate( x6+ x2,18);
-		 x3 ^= rotate(x15+x11, 7);
-		 x7 ^= rotate( x3+x15, 9);
-		x11 ^= rotate( x7+ x3,13);
-		x15 ^= rotate(x11+ x7,18);
-		 x1 ^= rotate( x0+ x3, 7);
-		 x2 ^= rotate( x1+ x0, 9);
-		 x3 ^= rotate( x2+ x1,13);
-		 x0 ^= rotate( x3+ x2,18);
-		 x6 ^= rotate( x5+ x4, 7);
-		 x7 ^= rotate( x6+ x5, 9);
-		 x4 ^= rotate( x7+ x6,13);
-		 x5 ^= rotate( x4+ x7,18);
-		x11 ^= rotate(x10+ x9, 7);
-		 x8 ^= rotate(x11+x10, 9);
-		 x9 ^= rotate( x8+x11,13);
-		x10 ^= rotate( x9+ x8,18);
-		x12 ^= rotate(x15+x14, 7);
-		x13 ^= rotate(x12+x15, 9);
-		x14 ^= rotate(x13+x12,13);
-		x15 ^= rotate(x14+x13,18);
+		 x4 ^= rotate(add2!( x0,x12), 7);
+		 x8 ^= rotate(add2!( x4, x0), 9);
+		x12 ^= rotate(add2!( x8, x4),13);
+		 x0 ^= rotate(add2!(x12, x8),18);
+		 x9 ^= rotate(add2!( x5, x1), 7);
+		x13 ^= rotate(add2!( x9, x5), 9);
+		 x1 ^= rotate(add2!(x13, x9),13);
+		 x5 ^= rotate(add2!( x1,x13),18);
+		x14 ^= rotate(add2!(x10, x6), 7);
+		 x2 ^= rotate(add2!(x14,x10), 9);
+		 x6 ^= rotate(add2!( x2,x14),13);
+		x10 ^= rotate(add2!( x6, x2),18);
+		 x3 ^= rotate(add2!(x15,x11), 7);
+		 x7 ^= rotate(add2!( x3,x15), 9);
+		x11 ^= rotate(add2!( x7, x3),13);
+		x15 ^= rotate(add2!(x11, x7),18);
+		 x1 ^= rotate(add2!( x0, x3), 7);
+		 x2 ^= rotate(add2!( x1, x0), 9);
+		 x3 ^= rotate(add2!( x2, x1),13);
+		 x0 ^= rotate(add2!( x3, x2),18);
+		 x6 ^= rotate(add2!( x5, x4), 7);
+		 x7 ^= rotate(add2!( x6, x5), 9);
+		 x4 ^= rotate(add2!( x7, x6),13);
+		 x5 ^= rotate(add2!( x4, x7),18);
+		x11 ^= rotate(add2!(x10, x9), 7);
+		 x8 ^= rotate(add2!(x11,x10), 9);
+		 x9 ^= rotate(add2!( x8,x11),13);
+		x10 ^= rotate(add2!( x9, x8),18);
+		x12 ^= rotate(add2!(x15,x14), 7);
+		x13 ^= rotate(add2!(x12,x15), 9);
+		x14 ^= rotate(add2!(x13,x12),13);
+		x15 ^= rotate(add2!(x14,x13),18);
 	}
 
-	x0 += j0;
-	x1 += j1;
-	x2 += j2;
-	x3 += j3;
-	x4 += j4;
-	x5 += j5;
-	x6 += j6;
-	x7 += j7;
-	x8 += j8;
-	x9 += j9;
-	x10 += j10;
-	x11 += j11;
-	x12 += j12;
-	x13 += j13;
-	x14 += j14;
-	x15 += j15;
+	incr!( x0, j0);
+	incr!( x1, j1);
+	incr!( x2, j2);
+	incr!( x3, j3);
+	incr!( x4, j4);
+	incr!( x5, j5);
+	incr!( x6, j6);
+	incr!( x7, j7);
+	incr!( x8, j8);
+	incr!( x9, j9);
+	incr!(x10,j10);
+	incr!(x11,j11);
+	incr!(x12,j12);
+	incr!(x13,j13);
+	incr!(x14,j14);
+	incr!(x15,j15);
 
 	store_littleendian(&mut out[0..4],   x0);
 	store_littleendian(&mut out[4..8],   x1);
@@ -166,38 +168,38 @@ pub fn hsalsa20(out: &mut [u8], inc: &[u8], k: &[u8], c: &[u8]) {
 	let mut x15 = load_littleendian(&c[12..16]);
 
 	for _ in 0..10 {
-		 x4 ^= rotate( x0+x12, 7);
-		 x8 ^= rotate( x4+ x0, 9);
-		x12 ^= rotate( x8+ x4,13);
-		 x0 ^= rotate(x12+ x8,18);
-		 x9 ^= rotate( x5+ x1, 7);
-		x13 ^= rotate( x9+ x5, 9);
-		 x1 ^= rotate(x13+ x9,13);
-		 x5 ^= rotate( x1+x13,18);
-		x14 ^= rotate(x10+ x6, 7);
-		 x2 ^= rotate(x14+x10, 9);
-		 x6 ^= rotate( x2+x14,13);
-		x10 ^= rotate( x6+ x2,18);
-		 x3 ^= rotate(x15+x11, 7);
-		 x7 ^= rotate( x3+x15, 9);
-		x11 ^= rotate( x7+ x3,13);
-		x15 ^= rotate(x11+ x7,18);
-		 x1 ^= rotate( x0+ x3, 7);
-		 x2 ^= rotate( x1+ x0, 9);
-		 x3 ^= rotate( x2+ x1,13);
-		 x0 ^= rotate( x3+ x2,18);
-		 x6 ^= rotate( x5+ x4, 7);
-		 x7 ^= rotate( x6+ x5, 9);
-		 x4 ^= rotate( x7+ x6,13);
-		 x5 ^= rotate( x4+ x7,18);
-		x11 ^= rotate(x10+ x9, 7);
-		 x8 ^= rotate(x11+x10, 9);
-		 x9 ^= rotate( x8+x11,13);
-		x10 ^= rotate( x9+ x8,18);
-		x12 ^= rotate(x15+x14, 7);
-		x13 ^= rotate(x12+x15, 9);
-		x14 ^= rotate(x13+x12,13);
-		x15 ^= rotate(x14+x13,18);
+		 x4 ^= rotate(add2!( x0,x12), 7);
+		 x8 ^= rotate(add2!( x4, x0), 9);
+		x12 ^= rotate(add2!( x8, x4),13);
+		 x0 ^= rotate(add2!(x12, x8),18);
+		 x9 ^= rotate(add2!( x5, x1), 7);
+		x13 ^= rotate(add2!( x9, x5), 9);
+		 x1 ^= rotate(add2!(x13, x9),13);
+		 x5 ^= rotate(add2!( x1,x13),18);
+		x14 ^= rotate(add2!(x10, x6), 7);
+		 x2 ^= rotate(add2!(x14,x10), 9);
+		 x6 ^= rotate(add2!( x2,x14),13);
+		x10 ^= rotate(add2!( x6, x2),18);
+		 x3 ^= rotate(add2!(x15,x11), 7);
+		 x7 ^= rotate(add2!( x3,x15), 9);
+		x11 ^= rotate(add2!( x7, x3),13);
+		x15 ^= rotate(add2!(x11, x7),18);
+		 x1 ^= rotate(add2!( x0, x3), 7);
+		 x2 ^= rotate(add2!( x1, x0), 9);
+		 x3 ^= rotate(add2!( x2, x1),13);
+		 x0 ^= rotate(add2!( x3, x2),18);
+		 x6 ^= rotate(add2!( x5, x4), 7);
+		 x7 ^= rotate(add2!( x6, x5), 9);
+		 x4 ^= rotate(add2!( x7, x6),13);
+		 x5 ^= rotate(add2!( x4, x7),18);
+		x11 ^= rotate(add2!(x10, x9), 7);
+		 x8 ^= rotate(add2!(x11,x10), 9);
+		 x9 ^= rotate(add2!( x8,x11),13);
+		x10 ^= rotate(add2!( x9, x8),18);
+		x12 ^= rotate(add2!(x15,x14), 7);
+		x13 ^= rotate(add2!(x12,x15), 9);
+		x14 ^= rotate(add2!(x13,x12),13);
+		x15 ^= rotate(add2!(x14,x13),18);
 	}
 
 	store_littleendian(&mut out[0..4],   x0);
@@ -214,8 +216,8 @@ pub fn hsalsa20(out: &mut [u8], inc: &[u8], k: &[u8], c: &[u8]) {
 #[cfg(test)]
 mod tests {
 	
-	use boxes::core::{ salsa20, hsalsa20 };
-	use util::verify::compare;
+	use super::{ salsa20, hsalsa20 };
+	use crate::util::verify::compare;
 
 	// Analog of tests/core4.c, expected result printed in tests/core4.out
 	#[test]

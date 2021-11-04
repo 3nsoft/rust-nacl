@@ -17,8 +17,8 @@
 //! crypto_stream/salsa20/ref/stream.c, crypto_stream/salsa20/ref/xor.c,
 //! crypto_stream/xsalsa20/ref/stream.c and crypto_stream/xsalsa20/ref/xor.c
 
-use boxes::core::{ salsa20, hsalsa20 };
-use util::Resetable;
+use super::core::{ salsa20, hsalsa20 };
+use crate::util::Resetable;
 
 // string "expand 32-byte k" in ascii form
 pub const SIGMA: &[u8] = &[
@@ -118,8 +118,8 @@ pub fn xsalsa20_xor(c0: &mut [u8], c: &mut [u8], m: &[u8], m_pad_len: usize,
 #[cfg(test)]
 mod tests {
 
-	use boxes::stream::{ xsalsa20, xsalsa20_xor };
-	use util::verify::compare;
+	use super::{ xsalsa20, xsalsa20_xor };
+	use crate::util::verify::compare;
 	
 	// Analog of tests/stream3.c, with expected result printed in
 	// tests/stream3.out

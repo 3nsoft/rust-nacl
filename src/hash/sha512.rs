@@ -1,4 +1,4 @@
-// Copyright(c) 2018 3NSoft Inc.
+// Copyright(c) 2018, 2021 3NSoft Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -15,7 +15,8 @@
 
 #![allow(non_upper_case_globals)]
 
-use util::Resetable;
+use crate::{ incr, add2, add4, add5 };
+use crate::util::Resetable;
 
 /// Analog of load_bigendian in crypto_hashblocks/sha512/ref/blocks.c
 #[inline]
@@ -77,7 +78,7 @@ macro_rules! sigma1 {
 
 macro_rules! M {
 	($w0: expr, $w14: expr, $w9: expr, $w1: expr) => {
-		$w0 = sigma1!($w14) + $w9 + sigma0!($w1) + $w0;
+		$w0 = add4!( sigma1!($w14), $w9, sigma0!($w1), $w0 );
 	}
 }
 
@@ -108,16 +109,16 @@ macro_rules! F {
 	($w: expr, $k: expr,
 			$a: expr, $b: expr, $c: expr, $d: expr,
 			$e: expr, $f: expr, $g: expr, $h: expr) => {
-		let t1 = $h + Sigma1!($e) + Ch!($e, $f, $g) + $k + $w;
-		let t2 = Sigma0!($a) + Maj!($a, $b, $c);
+		let t1 = add5!( $h, Sigma1!($e), Ch!($e, $f, $g), $k, $w );
+		let t2 = add2!( Sigma0!($a), Maj!($a, $b, $c) );
 		$h = $g;
 		$g = $f;
 		$f = $e;
-		$e = $d + t1;
+		$e = add2!( $d, t1 );
 		$d = $c;
 		$c = $b;
 		$b = $a;
-		$a = t1 + t2;
+		$a = add2!( t1, t2 );
 	}
 }
 
@@ -248,14 +249,14 @@ fn crypto_hashblocks(statebytes: &mut [u8], inc: &[u8]) -> usize {
 		F!(w14,0x5fcb6fab3ad6faec, a,b,c,d,e,f,g,h);
 		F!(w15,0x6c44198c4a475817, a,b,c,d,e,f,g,h);
 
-		a += state[0];
-		b += state[1];
-		c += state[2];
-		d += state[3];
-		e += state[4];
-		f += state[5];
-		g += state[6];
-		h += state[7];
+		incr!( a, state[0] );
+		incr!( b, state[1] );
+		incr!( c, state[2] );
+		incr!( d, state[3] );
+		incr!( e, state[4] );
+		incr!( f, state[5] );
+		incr!( g, state[6] );
+		incr!( h, state[7] );
 
 		state[0] = a;
 		state[1] = b;
@@ -416,8 +417,8 @@ impl Sha512 {
 #[cfg(test)]
 mod tests {
 
-	use hash::sha512::{ hash_sha512, Sha512 };
-	use util::verify::compare;
+	use super::{ hash_sha512, Sha512 };
+	use crate::util::verify::compare;
 
 	// Analog of tests/hash.c, with result printed in tests/hash.out
 	//

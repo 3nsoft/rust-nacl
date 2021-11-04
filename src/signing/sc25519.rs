@@ -1,4 +1,4 @@
-// Copyright(c) 2018 3NSoft Inc.
+// Copyright(c) 2018, 2021 3NSoft Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -16,6 +16,7 @@
 //! This module provides functionality found in
 //! crypto_sign/ed25519/ref/sc25519.c
 
+use crate::{ subw, add2 };
 
 /// Analog of struct sc25519 in crypto_sign/ed25519/ref/sc25519.h
 pub struct Sc25519 {
@@ -55,7 +56,7 @@ const mu: [u32; 33] = [
 #[inline]
 fn lt(a: u32, b: u32) -> u32 {
   let mut x: u32 = a;
-  x -= b; /* 0..65535: no; 4294901761..4294967295: yes */
+  x = subw!( x, b ); /* 0..65535: no; 4294901761..4294967295: yes */
   x >>= 31; /* 0: no; 1: yes */
   x
 }
@@ -70,10 +71,10 @@ fn reduce_add_sub(r: &mut Sc25519) {
 	for i in 0..32 {
 		pb += m[i];
 		b = lt(r.v[i], pb);
-		t[i] = (r.v[i]-pb+(b<<8)) as u8;
+		t[i] = add2!( subw!( r.v[i], pb ), b<<8 ) as u8;
 		pb = b;
 	}
-	let mask: u32 = b - 1;
+	let mask: u32 = subw!( b, 1 );
 	for i in 0..32 { 
 		r.v[i] ^= mask & (r.v[i] ^ (t[i] as u32));
 	}
@@ -116,8 +117,8 @@ fn barrett_reduce(r: &mut Sc25519, x: &[u32]) {
 
 	for i in 0..32 {
 		pb += r2[i];
-		let mut b = lt(r1[i],pb);
-		r.v[i] = r1[i]-pb+(b<<8);
+		let b = lt(r1[i],pb);
+		r.v[i] = add2!( subw!( r1[i], pb ), b<<8 );
 		pb = b;
 	}
 

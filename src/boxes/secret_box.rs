@@ -16,9 +16,9 @@
 //! This module provides secret box pack and open functionality.
 //! It also provide ability to use cipner format with-nonce.
 
-use boxes::stream::{ xsalsa20_xor, xsalsa20 };
-use boxes::onetimeauth::{ poly1305, poly1305_verify };
-use util::{ Error, make_cipher_verification_error, make_conf_error,
+use super::stream::{ xsalsa20_xor, xsalsa20 };
+use super::onetimeauth::{ poly1305, poly1305_verify };
+use crate::util::{ Error, make_cipher_verification_error, make_conf_error,
 	Resetable };
 
 /// Analog of crypto_secretbox in crypto_secretbox/xsalsa20poly1305/ref/box.c
@@ -93,13 +93,9 @@ pub fn open(c: &[u8], n: &[u8], k: &[u8]) -> Result<Vec<u8>, Error> {
 
 pub mod format_wn {
 
-	use boxes::secret_box::NONCE_LENGTH;
-	use boxes::secret_box::POLY_LENGTH;
-	use boxes::secret_box::KEY_LENGTH;
-	use util::Error;
-	use boxes::secret_box::xsalsa20_poly1305_pad_and_pack;
-	use util::make_conf_error;
-	use boxes::secret_box::open as original_open;
+	use super::{ NONCE_LENGTH, POLY_LENGTH, KEY_LENGTH,
+		open as original_open, xsalsa20_poly1305_pad_and_pack};
+	use crate::util::{ Error, make_conf_error };
 
 	/// This function packs given message into  with-nonce layout, which is
 	/// nonce, followed by poly1305 hash, followed by xsalsa20 cipher.
@@ -303,8 +299,8 @@ pub const JWK_ALG_NAME: &str = "NaCl-sbox-XSP";
 #[allow(non_upper_case_globals)]
 mod tests {
 
-	use util::verify::compare;
-	use boxes::secret_box::{ NONCE_LENGTH, KEY_LENGTH, POLY_LENGTH, pack, open,
+	use crate::util::verify::compare;
+	use super::{ NONCE_LENGTH, KEY_LENGTH, POLY_LENGTH, pack, open,
 		format_wn };
 
 	static firstkey: [u8; KEY_LENGTH] = [

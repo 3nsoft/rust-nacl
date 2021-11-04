@@ -1,4 +1,4 @@
-// Copyright(c) 2018 3NSoft Inc.
+// Copyright(c) 2018, 2021 3NSoft Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -19,13 +19,15 @@
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 
-use signing::fe25519::*;
-use signing::sc25519::*;
+use crate::{ subw };
+
+use super::fe25519::*;
+use super::sc25519::*;
 
 /// Analog of constant ge25519_base_multiples_affine in
 /// crypto_sign/ed25519/ref/ge25519.c
 /// Multiples of the base point in affine representation
-use signing::ge25519_base::ge25519_base_multiples_affine;
+use super::ge25519_base::ge25519_base_multiples_affine;
 
 /// Analog of struct ge25519 in crypto_sign/ed25519/ref/ge25519.h
 pub struct Ge25519 {
@@ -286,7 +288,7 @@ fn equal(b: i8, c: i8) -> u8 {
 	let uc: u8 = c as u8;
 	let x: u8 = ub ^ uc; /* 0: yes; 1..255: no */
 	let mut y: u32 = x as u32; /* 0: yes; 1..255: no */
-	y -= 1; /* 4294967295: yes; 0..254: no */
+	y = subw!( y, 1 ); /* 4294967295: yes; 0..254: no */
 	y >>= 31; /* 1: yes; 0: no */
 	y as u8
 }

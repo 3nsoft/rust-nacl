@@ -1,4 +1,4 @@
-// Copyright(c) 2018 3NSoft Inc.
+// Copyright(c) 2018, 2021 3NSoft Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use util::Resetable;
+use crate::util::Resetable;
 
 /// Encode a length len/4 vector of (uint32_t) into a length len vector of
 /// (unsigned char) in big-endian form.  Assumes len is a multiple of 4.
@@ -69,13 +69,31 @@ macro_rules! s1 {
 	($x: expr) => (ROTR!($x, 17) ^ ROTR!($x, 19) ^ SHR!($x, 10))
 }
 
+macro_rules! add2 {
+	($a: expr, $b: expr) => {
+		$a.wrapping_add($b)
+	}
+}
+
+macro_rules! incr {
+	($a: expr, $b: expr) => {
+		$a = $a.wrapping_add($b)
+	}
+}
+
+macro_rules! add4 {
+	($a: expr, $b: expr, $c: expr, $d: expr) => {
+		$a.wrapping_add($b.wrapping_add($c.wrapping_add($d)))
+	}
+}
+
 // SHA256 round function
 macro_rules! RND {
 	($a: expr, $b: expr, $c: expr, $d: expr, $e: expr, $f: expr, $g: expr, $h: expr, $k: expr, $t0: expr, $t1: expr) => {
-		$t0 = $h + S1!($e) + Ch!($e, $f, $g) + $k;
-		$t1 = S0!($a) + Maj!($a, $b, $c);
-		$d += $t0;
-		$h  = $t0 + $t1;
+		$t0 = add4!( $h, S1!($e), Ch!($e, $f, $g), $k );
+		$t1 = add2!( S0!($a), Maj!($a, $b, $c) );
+		incr!( $d, $t0 );
+		$h  = add2!( $t0, $t1 );
 	}
 }
 
@@ -84,7 +102,9 @@ macro_rules! RNDr {
 	($S: expr, $W: expr, $i: expr, $k: expr, $t0: expr, $t1: expr) => {
 		RND!($S[(64 - $i) % 8], $S[(65 - $i) % 8], $S[(66 - $i) % 8],
 			$S[(67 - $i) % 8], $S[(68 - $i) % 8], $S[(69 - $i) % 8],
-			$S[(70 - $i) % 8], $S[(71 - $i) % 8], $W[$i] + $k, $t0, $t1);
+			$S[(70 - $i) % 8], $S[(71 - $i) % 8],
+			add2!( $W[$i], $k ),
+			$t0, $t1);
 	}
 }
 
@@ -101,7 +121,7 @@ fn sha256_transform(state: &mut [u32], block: &[u8]) {
 	/* 1. Prepare message schedule W. */
 	be32dec_vect(&mut w, &block, 64);
 	for i in 16..64 {
-		w[i] = s1!(w[i - 2]) + w[i - 7] + s0!(w[i - 15]) + w[i - 16];
+		w[i] = add4!( s1!(w[i - 2]), w[i - 7], s0!(w[i - 15]), w[i - 16] );
 	}
 
 	/* 2. Initialize working variables. */
@@ -174,7 +194,7 @@ fn sha256_transform(state: &mut [u32], block: &[u8]) {
 	RNDr!(s, w, 63, 0xc67178f2, t0, t1);
 
 	/* 4. Mix local working variables into global state */
-	for i in 0..8 { state[i] += s[i]; }
+	for i in 0..8 { incr!( state[i], s[i] ); }
 
 	/* Clean the stack. */
 	w.reset();
@@ -442,9 +462,9 @@ fn copy_sha_ctx(dst: &mut Sha256Ctx, src: &Sha256Ctx) {
 #[cfg(test)]
 mod tests {
 
-	use scrypt::sha256::{ pbkdf2_sha256, make_sha256_ctx, sha256_init,
+	use super::{ pbkdf2_sha256, make_sha256_ctx, sha256_init,
 		sha256_update, sha256_final };
-	use util::verify::compare;
+	use crate::util::verify::compare;
 
 	// Test SHA-256 for use in scrypt.
 	//

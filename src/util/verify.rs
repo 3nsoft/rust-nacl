@@ -21,7 +21,7 @@ pub fn compare_v16(x: &[u8], y: &[u8]) -> bool {
 	for i in 0..16 {
 		differentbits |= x[i] ^ y[i];
 	}
-	(differentbits == 0)
+	differentbits == 0
 }
 
 pub fn compare_v32(x: &[u8], y: &[u8]) -> bool {
@@ -29,7 +29,7 @@ pub fn compare_v32(x: &[u8], y: &[u8]) -> bool {
 	for i in 0..32 {
 		differentbits |= x[i] ^ y[i];
 	}
-	(differentbits == 0)
+	differentbits == 0
 }
 
 pub fn compare(x: &[u8], y: &[u8]) -> bool {
@@ -39,16 +39,14 @@ pub fn compare(x: &[u8], y: &[u8]) -> bool {
 	for i in 0..len {
 		differentbits |= x[i] ^ y[i];
 	}
-	(differentbits == 0)
+	differentbits == 0
 }
 
 
 #[cfg(test)]
 mod tests {
 	
-	use util::verify::compare_v16;
-	use util::verify::compare_v32;
-	use util::verify::compare;
+	use super::{ compare_v16, compare_v32, compare };
 
 	#[test]
 	fn constant_time_comparisons() {
