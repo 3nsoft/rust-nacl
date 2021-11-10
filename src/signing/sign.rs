@@ -22,17 +22,29 @@ use crate::util::{ make_conf_error, make_signature_verification_error, Error,
 pub struct Keypair {
 	
 	/// Secret key of this pair.
-	pub skey: [u8; 64],
+	pub skey: [u8; SECRET_KEY_LENGTH],
 	
 	/// Public key of this pair.
-	pub pkey: [u8; 32],
+	pub pkey: [u8; PUBLIC_KEY_LENGTH],
 
 }
 
+/// Signing algorithm name for JWK's (JSON Web Key) 
+pub const JWK_ALG_NAME: &str = "NaCl-sign-Ed25519";
+
+/// Seed length, from which keypair is created
+pub const SEED_LENGTH: usize = 32;
+
+/// Public key length for signing
+pub const PUBLIC_KEY_LENGTH: usize = 32;
+
+/// Secret key length for signing
+pub const SECRET_KEY_LENGTH: usize = 64;
+
 fn make_keypair() -> Keypair {
 	Keypair {
-		skey: [0; 64],
-		pkey: [0; 32],
+		skey: [0; SECRET_KEY_LENGTH],
+		pkey: [0; PUBLIC_KEY_LENGTH],
 	}
 }
 
@@ -59,9 +71,11 @@ pub fn generate_keypair(seed: &[u8]) -> Keypair {
 	pair
 }
 
+/// Extracts public key from a given secret key
 pub fn extract_pkey(sk: &[u8]) -> Result<Vec<u8>, Error> {
-	if sk.len() != 64 { return Err(make_conf_error(format!(
-		"Length of given sk array is {} instead of 64", sk.len()))); }
+	if sk.len() != SECRET_KEY_LENGTH { return Err(make_conf_error(format!(
+		"Length of given sk array is {} instead of {}",
+		sk.len(), SECRET_KEY_LENGTH))); }
 	let mut pk: Vec<u8> = vec![0; 32];
 	pk[..].copy_from_slice(&sk[32..]);
 	Ok(pk)
@@ -131,6 +145,7 @@ pub fn sign(m: &[u8], sk: &[u8]) -> Result<Vec<u8>, Error> {
 	Ok(sm)
 }
 
+/// Signs message `m` with key `sk`, returning only signature bytes.
 pub fn signature(m: &[u8], sk: &[u8]) -> Result<Vec<u8>, Error> {
 	if sk.len() != 64 { return Err(make_conf_error(format!(
 		"Secret key array is {} bytes long instead of 64", sk.len()))); }
@@ -225,6 +240,8 @@ pub fn open(sm: &[u8], pk: &[u8]) -> Result<Vec<u8>, Error> {
 	}
 }
 
+/// Verifies that signature `sig` was created on message `m` with key with
+/// given public part `pk`.
 pub fn verify(sig: &[u8], m: &[u8], pk: &[u8]) -> Result<bool, Error> {
 	if pk.len() != 32 { return Err(make_conf_error(format!(
 		"Public key array is {} bytes long instead of 32", pk.len()))); }
@@ -264,13 +281,14 @@ pub fn verify(sig: &[u8], m: &[u8], pk: &[u8]) -> Result<bool, Error> {
 #[cfg(test)]
 mod tests {
 
-	use super::{ generate_keypair, sign, open, signature, verify };
+	use super::{ generate_keypair, sign, open, signature, verify, SEED_LENGTH, PUBLIC_KEY_LENGTH };
 	use crate::util::verify::compare;
+	use crate::util::ops::incr;
 
 	#[test]
 	fn test1() {
 
-		let key_seed: [u8; 32] = [
+		let key_seed: [u8; SEED_LENGTH] = [
 			0xae, 0x38, 0x86, 0x7b, 0xd2, 0x65, 0xcb, 0x86, 0x57, 0x0e,
 			0x90, 0x0e, 0x24, 0xa1, 0x75, 0x03, 0x2f, 0x74, 0xab, 0x4d,
 			0xa1, 0xbd, 0xf5, 0xc9, 0x12, 0x3e, 0x4c, 0x98, 0x12, 0xaa,
@@ -315,8 +333,8 @@ mod tests {
 	fn test2() {
 
 		struct SeedAndPKey {
-			seed: [u8; 32],
-			pkey: [u8; 32]
+			seed: [u8; SEED_LENGTH],
+			pkey: [u8; PUBLIC_KEY_LENGTH]
 		}
 		
 		let seed_and_pkeys = [
@@ -368,11 +386,13 @@ We now have a way to find out the index of the end of the first word in the stri
 			let pair = generate_keypair(&sp.seed);
 			assert!(compare(&pair.pkey, &sp.pkey));
 			let signed_m = sign(&m, &pair.skey).unwrap();
-			let sig = signature(&m, &pair.skey).unwrap();
+			let mut sig = signature(&m, &pair.skey).unwrap();
 			assert!(compare(&sig, &signed_m[0..64]));
 			let result = open(&signed_m, &pair.pkey).unwrap();
 			assert!(compare(&result, &m));
 			assert!(verify(&sig, &m, &pair.pkey).unwrap());
+			incr!(sig[5], 1 as u8);
+			assert!(!verify(&sig, &m, &pair.pkey).unwrap());
 		}
 		
 	}

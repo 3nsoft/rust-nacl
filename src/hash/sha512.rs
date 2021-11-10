@@ -15,7 +15,7 @@
 
 #![allow(non_upper_case_globals)]
 
-use crate::{ incr, add2, add4, add5 };
+use crate::util::ops::{ incr, add2, add4, add5 };
 use crate::util::Resetable;
 
 /// Analog of load_bigendian in crypto_hashblocks/sha512/ref/blocks.c

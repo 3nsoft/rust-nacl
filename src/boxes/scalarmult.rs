@@ -17,7 +17,7 @@
 //! crypto_scalarmult/curve25519/ref/smult.c and
 //! crypto_scalarmult/curve25519/ref/base.c
 
-use crate::{ subw, incr };
+use crate::util::ops::{ subw, incr };
 
 fn add(out: &mut [u32], a: &[u32], b: &[u32]) {
 	let mut u: u32 = 0;

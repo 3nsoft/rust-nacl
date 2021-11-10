@@ -15,23 +15,19 @@
 
 #![allow(non_snake_case)]
 
-use crate::{ incr, add2 };
+use crate::util::ops::{ incr, add2 };
 
 use super::sha256::pbkdf2_sha256;
 use crate::util::{ Error };
 
-/**
- * Analog of le32dec in lib/util/sysendian.h
- */
+/// Analog of le32dec in lib/util/sysendian.h
 #[inline]
 fn le32dec(p: &[u8]) -> u32 {
 	(p[0] as u32) + ((p[1] as u32) << 8) +
 	((p[2] as u32) << 16) + ((p[3] as u32) << 24)
 }
 
-/**
- * Analog of le32enc in lib/util/sysendian.h
- */
+/// Analog of le32enc in lib/util/sysendian.h
 #[inline]
 fn le32enc(p: &mut [u8], x: u32) {
 	p[0] = (x & 0xff) as u8;
@@ -40,18 +36,14 @@ fn le32enc(p: &mut [u8], x: u32) {
 	p[3] = ((x >> 24) & 0xff) as u8;
 }
 
-/**
- * Analog of macro used in salsa20_8 in lib/crypto/crypto_scrypt-ref.c
- */
+/// Analog of macro used in salsa20_8 in lib/crypto/crypto_scrypt-ref.c
 macro_rules! R {
 	($a: expr, $b: expr) => ((($a) << ($b)) | (($a) >> (32 - ($b))))
 }
 
-/**
- * Analog of salsa20_8 in lib/crypto/crypto_scrypt-ref.c
- * salsa20_8(B):
- * Apply the salsa20/8 core to the provided block.
- */
+/// salsa20_8(B):
+/// Apply the salsa20/8 core to the provided block.
+/// Analog of salsa20_8 in lib/crypto/crypto_scrypt-ref.c
 fn salsa20_8(B: &mut [u8]) {
 
 	/* Convert little-endian values in. */
@@ -104,30 +96,24 @@ fn salsa20_8(B: &mut [u8]) {
 	}
 }
 
-/**
- * Analog of blkcpy in lib/crypto/crypto_scrypt-ref.c
- */
+/// Analog of blkcpy in lib/crypto/crypto_scrypt-ref.c
 fn blkcpy(dest: &mut [u8], src: &[u8], len: usize) {
 	for i in 0..len {
 		dest[i] = src[i];
 	}
 }
 
-/**
- * Analog of blkxor in lib/crypto/crypto_scrypt-ref.c
- */
+/// Analog of blkxor in lib/crypto/crypto_scrypt-ref.c
 fn blkxor(dest: &mut [u8], src: &[u8], len: usize) {
 	for i in 0..len {
 		dest[i] ^= src[i];
 	}
 }
 
-/**
- * Analog of blockmix_salsa8 in lib/crypto/crypto_scrypt-ref.c
- * blockmix_salsa8(B, Y, r):
- * Compute B = BlockMix_{salsa20/8, r}(B).  The input B must be 128r bytes in
- * length; the temporary space Y must also be the same size.
- */
+/// blockmix_salsa8(B, Y, r):
+/// Compute B = BlockMix_{salsa20/8, r}(B).  The input B must be 128r bytes in
+/// length; the temporary space Y must also be the same size.
+/// Analog of blockmix_salsa8 in lib/crypto/crypto_scrypt-ref.c
 fn blockmix_salsa8(B: &mut [u8], Y: &mut [u8], r: usize) {
 	let mut X: [u8; 64] = [0; 64];
 
@@ -153,9 +139,7 @@ fn blockmix_salsa8(B: &mut [u8], Y: &mut [u8], r: usize) {
 	}
 }
 
-/**
- * Analog of le64dec in lib/util/sysendian.h
- */
+/// Analog of le64dec in lib/util/sysendian.h
 #[inline]
 fn le64dec(p: &[u8]) -> u64 {
 	(p[0] as u64) + ((p[1] as u64) << 8) +
@@ -164,26 +148,63 @@ fn le64dec(p: &[u8]) -> u64 {
 	((p[6] as u64) << 48) + ((p[7] as u64) << 56)
 }
 
-/**
- * Analog of integerify in lib/crypto/crypto_scrypt-ref.c
- * integerify(B, r):
- * Return the result of parsing B_{2r-1} as a little-endian integer.
- */
+/// integerify(B, r):
+/// Return the result of parsing B_{2r-1} as a little-endian integer.
+/// Analog of integerify in lib/crypto/crypto_scrypt-ref.c
 fn integerify(B: &[u8], r: usize) -> u64 {
 	let X = &B[(2 * r - 1) * 64 ..];
 	le64dec(X)
 }
 
-/**
- * Analog of smix in lib/crypto/crypto_scrypt-ref.c
- * smix(B, r, N, V, XY):
- * Compute B = SMix_r(B, N).  The input B must be 128r bytes in length; the
- * temporary storage V must be 128rN bytes in length; the temporary storage
- * X and Y must be 128r each or total 256r bytes in length.  The value N must
- * be a power of 2.
- */
-fn smix(B: &mut [u8], r: usize, N: usize, V: &mut [u8],
-		X: &mut [u8], Y: &mut [u8]) {
+struct ProgressIndicator<'a> {
+	completed: u32,
+	delta_percent: u32,
+	delta_n: u32,
+	progress_cb: &'a dyn Fn(u32) -> (),
+}
+
+impl ProgressIndicator<'_> {
+
+	fn new<'a>(
+		N: u32, p: u32, start_percent: u32, progress_cb: &'a dyn Fn(u32) -> ()
+	) -> ProgressIndicator {
+		(progress_cb)(start_percent);
+		let total_n = 2*N*p;
+		let total_percent = 100 - start_percent;
+		let (delta_n, delta_percent) = if total_n < total_percent {
+			(1, total_percent/total_n)
+		} else {
+			(total_n/total_percent, 1)
+		};
+		ProgressIndicator {
+			completed: start_percent,
+			delta_n: delta_n,
+			delta_percent: delta_percent,
+			progress_cb: progress_cb,
+		}
+	}
+
+	fn addDelta(&mut self) -> () {
+		if self.completed <= 100 - self.delta_percent {
+			self.completed += self.delta_percent;
+			(self.progress_cb)(self.completed);
+		}
+	}
+
+}
+
+/// smix(B, r, N, V, XY):
+/// Compute B = SMix_r(B, N).  The input B must be 128r bytes in length; the
+/// temporary storage V must be 128rN bytes in length; the temporary storage
+/// X and Y must be 128r each or total 256r bytes in length.  The value N must
+/// be a power of 2.
+/// Analog of smix in lib/crypto/crypto_scrypt-ref.c
+fn smix(
+	B: &mut [u8], r: usize, N: usize, V: &mut [u8], X: &mut [u8], Y: &mut [u8],
+	progress: &mut ProgressIndicator
+) {
+	let mut i_for_progress_report = progress.delta_n;
+
 	/* 1: X <-- B */
 	blkcpy(X, B, 128 * r);
 
@@ -194,23 +215,35 @@ fn smix(B: &mut [u8], r: usize, N: usize, V: &mut [u8],
 
 		/* 4: X <-- H(X) */
 		blockmix_salsa8(X, Y, r);
+
+		if i as u32 == i_for_progress_report {
+			progress.addDelta();
+			i_for_progress_report += progress.delta_n;
+		}
 	}
 
+	i_for_progress_report = progress.delta_n;
+
 	/* 6: for i = 0 to N - 1 do */
-	for _ in 0..N {
+	for i in 0..N {
 		/* 7: j <-- Integerify(X) mod N */
 		let j = (integerify(X, r) as usize) & (N - 1);
 
 		/* 8: X <-- H(X \xor V_j) */
 		blkxor(X, &V[j * (128 * r) ..], 128 * r);
 		blockmix_salsa8(X, Y, r);
+
+		if i as u32 == i_for_progress_report {
+			progress.addDelta();
+			i_for_progress_report += progress.delta_n;
+		}
 	}
 
 	/* 10: B' <-- X */
 	blkcpy(B, X, 128 * r);
 }
 
-pub fn allocate_byte_array(len: usize) -> Vec<u8> {
+fn allocate_byte_array(len: usize) -> Vec<u8> {
 	let mut v: Vec<u8> = Vec::with_capacity(len);
 	unsafe {
 		v.set_len(len);
@@ -218,45 +251,43 @@ pub fn allocate_byte_array(len: usize) -> Vec<u8> {
 	v
 }
 
-/**
- * crypto_scrypt(passwd, passwdlen, salt, saltlen, N, r, p, buf, buflen):
- * Compute scrypt(passwd[0 .. passwdlen - 1], salt[0 .. saltlen - 1], N, r,
- * p, buflen) and write the result into buf.  The parameters r, p, and buflen
- * must satisfy r * p < 2^30 and buflen <= (2^32 - 1) * 32.  The parameter N
- * must be a power of 2.
- *
- * Return 0 on success; or -1 on error.
- */
-pub fn scrypt(passwd: &[u8], salt: &[u8], logN: u8, r: usize, p: usize, dk_len: usize) -> Result<Vec<u8>, Error> {
-	let N = (1 as usize) << logN;
+/// crypto_scrypt(passwd, passwdlen, salt, saltlen, N, r, p, buf, buflen):
+/// Compute scrypt(passwd[0 .. passwdlen - 1], salt[0 .. saltlen - 1], N, r,
+/// p, buflen) and write the result into buf.  The parameters r, p, and buflen
+/// must satisfy r * p < 2^30 and buflen <= (2^32 - 1) * 32.  The parameter N
+/// must be a power of 2.
+/// Return 0 on success; or -1 on error.
+/// 
+/// This rust implementation notes:
+/// - we asks for `logN` to enforce N being a power of 2.
+/// - we use standard memory allocation. When run in operating system,
+///   allocation calls return ok even on infinite amount, pushing error/panic
+///   later into the process that populates all of this area with random bytes.
+/// 
+pub fn scrypt(
+	passwd: &[u8], salt: &[u8], logN: u8, r: usize, p: usize, dk_len: usize,
+	progress_cb: &dyn Fn(u32) -> ()
+) -> Result<Vec<u8>, Error> {
 	// uint8_t * B;
 	// uint8_t * V;
 	// uint8_t * XY;
 	// uint32_t i;
 
 	/* Sanity-check parameters. */
-// #if SIZE_MAX > UINT32_MAX
-// 	if (buflen > (((uint64_t)(1) << 32) - 1) * 32) {
-// 		errno = EFBIG;
-// 		goto err0;
-// 	}
-// #endif
-// 	if ((uint64_t)(r) * (uint64_t)(p) >= (1 << 30)) {
-// 		errno = EFBIG;
-// 		goto err0;
-// 	}
-// 	if (((N & (N - 1)) != 0) || (N == 0)) {
-// 		errno = EINVAL;
-// 		goto err0;
-// 	}
-// 	if ((r > SIZE_MAX / 128 / p) ||
-// #if SIZE_MAX / 256 <= UINT32_MAX
-// 	    (r > SIZE_MAX / 256) ||
-// #endif
-// 	    (N > SIZE_MAX / 128 / r)) {
-// 		errno = ENOMEM;
-// 		goto err0;
-// 	}
+	if r * p >= 2usize.pow(30) {
+		// XXX specific error, bad args, with details in the message
+
+	}
+	if dk_len > (2usize.pow(32) - 1) * 32 {
+		// XXX specific error, bad args, with details in the message
+
+	}
+	if logN < 1 {
+		// XXX specific error, bad args, with details in the message
+
+	}
+
+	let N = 2usize.pow(logN as u32);
 
 	/* Allocate memory. */
 	let mut B = allocate_byte_array(128 * r * p);
@@ -266,16 +297,19 @@ pub fn scrypt(passwd: &[u8], salt: &[u8], logN: u8, r: usize, p: usize, dk_len: 
 
 	/* 1: (B_0 ... B_{p-1}) <-- PBKDF2(P, S, 1, p * MFLen) */
 	pbkdf2_sha256(passwd, salt, 1, &mut B);
+	let mut progress = ProgressIndicator::new(
+		N as u32, p as u32, 3, progress_cb);
 
 	/* 2: for i = 0 to p - 1 do */
 	for i in 0..p {
 		/* 3: B_i <-- MF(B_i, N) */
-		smix(&mut B[i * 128 * r ..], r, N, &mut V, &mut X, &mut Y);
+		smix(&mut B[i * 128 * r ..], r, N, &mut V, &mut X, &mut Y, &mut progress);
 	}
 
 	/* 5: DK <-- PBKDF2(P, B, 1, dkLen) */
 	let mut buf = allocate_byte_array(dk_len);
 	pbkdf2_sha256(passwd, &B, 1, &mut buf);
+	progress_cb(100);
 
 	/* Success! */
 	Ok(buf)
@@ -285,12 +319,13 @@ pub fn scrypt(passwd: &[u8], salt: &[u8], logN: u8, r: usize, p: usize, dk_len: 
 #[cfg(test)]
 mod tests {
 
+	use::std::cell::Cell;
 	use std::mem;
 	use super::{ allocate_byte_array, scrypt };
 	use crate::util::verify::compare;
 
 	#[test]
-	fn checks() {
+	fn show_funky_allocation_in_os() {
 		assert_eq!(8, mem::size_of::<usize>());
 		let x = allocate_byte_array(128);
 		assert!(x.capacity() == 128);
@@ -322,8 +357,14 @@ mod tests {
 			0xe0, 0xfb, 0x2e, 0x0d, 0x36, 0x28, 0xcf, 0x35, 0xe2, 0x0c,
 			0x38, 0xd1, 0x89, 0x06 ];
 		let hlen = expectation.len();
-		let h = scrypt(P, S, logN, r, p, hlen).unwrap();
+		let progress = Cell::new(0 as u32);
+		let h = scrypt(P, S, logN, r, p, hlen, & |p| {
+			assert!(p >= progress.get());
+			progress.set(p);
+			print!(" {}%", p);
+		}).unwrap();
 		assert!(compare(&h, &expectation));
+		assert!(progress.get() > 0);
 	}
 
 	/// Testing scrypt with logN==10, r==8, p==16.
@@ -345,8 +386,14 @@ mod tests {
 			0xaf, 0xb9, 0x4a, 0x83, 0xee, 0x6d, 0x83, 0x60, 0xcb, 0xdf,
 			0xa2, 0xcc, 0x06, 0x40 ];
 		let hlen = expectation.len();
-		let h = scrypt(P, S, logN, r, p, hlen).unwrap();
+		let progress = Cell::new(0 as u32);
+		let h = scrypt(P, S, logN, r, p, hlen, & |p| {
+			assert!(p >= progress.get());
+			progress.set(p);
+			print!(" {}%", p);
+		}).unwrap();
 		assert!(compare(&h, &expectation));
+		assert!(progress.get() > 0);
 	}
 
 	/// Testing scrypt with logN==14, r==8, p==1.
@@ -368,15 +415,20 @@ mod tests {
 			0x85, 0xdc, 0x0d, 0x65, 0x1e, 0x40, 0xdf, 0xcf, 0x01, 0x7b,
 			0x45, 0x57, 0x58, 0x87 ];
 		let hlen = expectation.len();
-		let h = scrypt(P, S, logN, r, p, hlen).unwrap();
+		let progress = Cell::new(0 as u32);
+		let h = scrypt(P, S, logN, r, p, hlen, & |p| {
+			assert!(p >= progress.get());
+			progress.set(p);
+			print!(" {}%", p);
+		}).unwrap();
 		assert!(compare(&h, &expectation));
+		assert!(progress.get() > 0);
 	}
 
 	/// Testing scrypt with logN==20, r==8, p==1.
 	/// See scrypt rfc https://tools.ietf.org/html/rfc7914
 	/// 
-	// #[test]
-	#[allow(dead_code)]
+	#[test]
 	fn with_logn_20_r_8_p_1() {
 		let P = "pleaseletmein".as_bytes();
 		let S = "SodiumChloride".as_bytes();
@@ -392,8 +444,14 @@ mod tests {
 			0x40, 0x49, 0xe8, 0xa9, 0x52, 0xfb, 0xcb, 0xf4, 0x5c, 0x6f,
 			0xa7, 0x7a, 0x41, 0xa4 ];
 		let hlen = expectation.len();
-		let h = scrypt(P, S, logN, r, p, hlen).unwrap();
+		let progress = Cell::new(0 as u32);
+		let h = scrypt(P, S, logN, r, p, hlen, & |p| {
+			assert!(p >= progress.get());
+			progress.set(p);
+			print!(" {}%", p);
+		}).unwrap();
 		assert!(compare(&h, &expectation));
+		assert!(progress.get() > 0);
 	}
 
 }

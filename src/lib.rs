@@ -16,10 +16,14 @@
 mod boxes;
 pub use boxes::{ secret_box, public_box };
 
-pub mod signing;
-pub mod hash;
+mod signing;
+pub use signing::sign;
 
-pub mod scrypt;
+mod hash;
+pub use hash::sha512;
+
+mod scrypt;
+pub use scrypt::scrypt::scrypt;
 
 mod util;
 pub use util::verify::{ compare, compare_v16, compare_v32 };

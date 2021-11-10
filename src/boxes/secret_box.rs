@@ -289,9 +289,16 @@ pub mod format_wn {
 
 }
 
+/// Nonce length for NaCl's boxes
 pub const NONCE_LENGTH: usize = 24;
+
+/// Key length for NaCl's boxes
 pub const KEY_LENGTH: usize = 32;
+
+/// Length of Poly hash, used in NaCl's boxes
 pub const POLY_LENGTH: usize = 16;
+
+/// NaCl secret box algorithm name for JWK's (JSON Web Key) 
 pub const JWK_ALG_NAME: &str = "NaCl-sbox-XSP";
 
 

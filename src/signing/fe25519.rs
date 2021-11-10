@@ -16,7 +16,7 @@
 //! This module provides functionality found in
 //! crypto_sign/ed25519/ref/fe25519.c
 
-use crate::{ subw };
+use crate::util::ops::{ subw };
 
 /// Analog of struct fe25519 in crypto_sign/ed25519/ref/fe25519.h
 pub struct Fe25519 {

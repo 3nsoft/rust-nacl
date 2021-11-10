@@ -14,37 +14,37 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#[macro_export]
 macro_rules! add2 {
 	($a: expr, $b: expr) => {
 		$a.wrapping_add($b)
 	}
 }
+pub(crate) use add2;
 
-#[macro_export]
 macro_rules! add4 {
 	($a: expr, $b: expr, $c: expr, $d: expr) => {
 		$a.wrapping_add($b.wrapping_add($c.wrapping_add($d)))
 	}
 }
+pub(crate) use add4;
 
-#[macro_export]
 macro_rules! add5 {
 	($a: expr, $b: expr, $c: expr, $d: expr, $e: expr) => {
 		$a.wrapping_add($b.wrapping_add($c.wrapping_add($d).wrapping_add($e)))
 	}
 }
+pub(crate) use add5;
 
-#[macro_export]
 macro_rules! subw {
 	($a: expr, $b: expr) => {
 		$a.wrapping_sub($b)
 	}
 }
+pub(crate) use subw;
 
-#[macro_export]
 macro_rules! incr {
 	($a: expr, $b: expr) => {
 		$a = $a.wrapping_add($b)
 	}
 }
+pub(crate) use incr;

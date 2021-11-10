@@ -16,7 +16,7 @@
 //! This module provides functionality found in
 //! crypto_sign/ed25519/ref/sc25519.c
 
-use crate::{ subw, add2 };
+use crate::util::ops::{ subw, add2 };
 
 /// Analog of struct sc25519 in crypto_sign/ed25519/ref/sc25519.h
 pub struct Sc25519 {
@@ -29,9 +29,10 @@ pub fn make_sc25519() -> Sc25519 {
 }
 
 /// Analog of struct shortsc25519 in crypto_sign/ed25519/ref/sc25519.h
-pub struct ShortSc25519 {
-	pub v: [u32; 16],
-}
+/// but is never used, hence commented out
+// pub struct ShortSc25519 {
+// 	pub v: [u32; 16],
+// }
 
 
 /* Arithmetic modulo the group order m = 2^252 +  27742317777372353535851937790883648493 = 7237005577332262213973186563042994240857116359379907606001950938285454250989 */

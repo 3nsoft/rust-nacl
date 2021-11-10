@@ -19,7 +19,7 @@
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 
-use crate::{ subw };
+use crate::util::ops::{ subw };
 
 use super::fe25519::*;
 use super::sc25519::*;

@@ -16,6 +16,7 @@
 //! This module provides constant time comparison utility, analogous to
 //! crypto_verify/.../ref/verify.c
 
+/// Compare 16-byte arrays in constant time.
 pub fn compare_v16(x: &[u8], y: &[u8]) -> bool {
 	let mut differentbits = 0;
 	for i in 0..16 {
@@ -24,6 +25,7 @@ pub fn compare_v16(x: &[u8], y: &[u8]) -> bool {
 	differentbits == 0
 }
 
+/// Compare 32-byte arrays in constant time.
 pub fn compare_v32(x: &[u8], y: &[u8]) -> bool {
 	let mut differentbits = 0;
 	for i in 0..32 {
@@ -32,6 +34,7 @@ pub fn compare_v32(x: &[u8], y: &[u8]) -> bool {
 	differentbits == 0
 }
 
+/// Compare byte arrays in constant time.
 pub fn compare(x: &[u8], y: &[u8]) -> bool {
 	let len = x.len();
 	if (len ^ y.len()) != 0 { return false; }

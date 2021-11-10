@@ -16,7 +16,7 @@
 //! This module provides core salsa20, mirroring functions from
 //! crypto_core/salsa20/ref/core.c
 
-use crate::{ add2, incr };
+use crate::util::ops::{ add2, incr };
 
 #[inline]
 fn rotate(u: u32, c: i32) -> u32 {

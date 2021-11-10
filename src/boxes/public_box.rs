@@ -21,7 +21,8 @@ use super::secret_box;
 
 pub use super::secret_box::{ NONCE_LENGTH, KEY_LENGTH, POLY_LENGTH};
 
-pub static JWK_ALG_NAME: &str = "NaCl-box-CXSP";
+/// NaCl public box algorithm name for JWK's (JSON Web Key) 
+pub const JWK_ALG_NAME: &str = "NaCl-box-CXSP";
 
 /// This function generates a public for any given secret key, which itself
 /// should be randomly generated.
