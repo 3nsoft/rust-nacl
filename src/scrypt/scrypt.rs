@@ -18,7 +18,7 @@
 use crate::util::ops::{ incr, add2 };
 
 use super::sha256::pbkdf2_sha256;
-use crate::util::{ Error };
+use crate::util::{ Error, make_conf_error };
 
 /// Analog of le32dec in lib/util/sysendian.h
 #[inline]
@@ -274,17 +274,14 @@ pub fn scrypt(
 	// uint32_t i;
 
 	/* Sanity-check parameters. */
-	if r * p >= pow_of_2(30) {
-		// XXX specific error, bad args, with details in the message
-
+	if r * p >= R_TIMES_P_LIMIT {
+		return Err(make_conf_error("r * p is too big".to_string()));
 	}
-	if dk_len > (pow_of_2(32) - 1) * 32 {
-		// XXX specific error, bad args, with details in the message
-
+	if dk_len > DK_LEN_LIMIT {
+		return Err(make_conf_error("dkLen is too big".to_string()));
 	}
-	if logN < 1 {
-		// XXX specific error, bad args, with details in the message
-
+	if logN > 31 {
+		return Err(make_conf_error("logN is too big".to_string()));
 	}
 
 	let N = pow_of_2(logN as u32);
@@ -315,10 +312,16 @@ pub fn scrypt(
 	Ok(buf)
 }
 
-fn pow_of_2(power: u32) -> usize {
-	1usize << power
+#[inline]
+const fn pow_of_2(power: u32) -> usize {
+	2usize.pow(power)
 }
 
+const R_TIMES_P_LIMIT: usize = pow_of_2(30);
+
+const DK_LEN_LIMIT: usize = if usize::MAX > 0xffffffff {
+	(pow_of_2(32) - 1) * 32
+} else { usize::MAX };
 
 #[cfg(test)]
 mod tests {
