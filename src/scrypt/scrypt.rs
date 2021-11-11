@@ -274,11 +274,11 @@ pub fn scrypt(
 	// uint32_t i;
 
 	/* Sanity-check parameters. */
-	if r * p >= 2usize.pow(30) {
+	if r * p >= pow_of_2(30) {
 		// XXX specific error, bad args, with details in the message
 
 	}
-	if dk_len > (2usize.pow(32) - 1) * 32 {
+	if dk_len > (pow_of_2(32) - 1) * 32 {
 		// XXX specific error, bad args, with details in the message
 
 	}
@@ -287,7 +287,7 @@ pub fn scrypt(
 
 	}
 
-	let N = 2usize.pow(logN as u32);
+	let N = pow_of_2(logN as u32);
 
 	/* Allocate memory. */
 	let mut B = allocate_byte_array(128 * r * p);
@@ -313,6 +313,10 @@ pub fn scrypt(
 
 	/* Success! */
 	Ok(buf)
+}
+
+fn pow_of_2(power: u32) -> usize {
+	1usize << power
 }
 
 
