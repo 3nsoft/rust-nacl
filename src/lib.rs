@@ -27,3 +27,4 @@ pub use scrypt::scrypt::scrypt;
 
 mod util;
 pub use util::verify::{ compare, compare_v16, compare_v32 };
+pub use util::{ Error, ErrorCondition };
